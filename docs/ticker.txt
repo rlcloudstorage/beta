@@ -1,0 +1,12 @@
+target
+"SPXL", "SPXS", "YINN", "YANG"
+
+china
+"ECNS", "FXI"
+
+usa
+"HYG", "XLF", "XLY"
+
+misc
+"AFK", "ASEA", "EZU" 
+

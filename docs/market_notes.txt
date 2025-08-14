@@ -1,0 +1,127 @@
+
+Breadth indicators are primarily used for two purposes:
+
++    Market Sentiment - Breadth indicators can help you determine if a market is leaning bullish or bearish.
++    Trend Strength - Breadth indicators can help you determine the strength of a bullish or breaish trend.
+
+
+Some popular breadth indicators include:
+
++    Advance/Decline Line
++    On Balance Volume
++    McClellan Summation Index
++    Arms Index (TRIN)
++    Force Index
++    Chaikin Oscillator
++    Up/Down Volume Ratio
++    Up/Down Volume Spread
++    Cumulative Volume Index
+
+
+Volatility Technical Analysis
+
++    Average True Range - The Average True Range (ATR) indicator was developed by J. Welles Wilder to measure a security's volatility. The ATR indicator does not reflect price direction and is not used to predict price. However, this indicator is widely used in technical analysis to measure the degree of price movement or price volatility. In order to more precisely reflect the volatility of an analyzed security, Wilder suggested using the previous bar's closing price to capture gaps that would not be counted by a formula based on the high-low price range only.
+
++    Absolute ATR - Absolute ATR allows to measure volatility in absolute values by providing the ability to compare volatility of different stocks and compare the same stocks or indexes in different trading periods.
+
++    Absolute Breadth Index - Absolute Breadth Index (ABI) is used to measure volatility of indexes via difference between number of advancing and declining stocks. ABI is a good indicator to spot bottoms of recession and stock market crashes.
+
++    Beta - Beta is one of the most popular indicators to measure volatility and trading risk relatively to the stock market. The Beta has found its place not just in technical analysis but in fundamental analysis as well.
+
++    Fibonacci Bands - The Fibonacci Bands indicator, also called as "Bollinger Bands® Bollinger Bands - Bollinger Bands were developed by John Bollinger to compare volatility and relative price levels over a selected period of time.
+
++    Bollinger Bandwidth - Bollinger Bandwidth indicator is based on the Bollinger Bands and is used in technical analysis to measure the width between upper and lover bands in order to evaluate  stock's volatility.
+
++    Bollinger Percent - Bollinger Percent indicator is based on the Bollinger Bands and is used in technical analysis to locate the current close price in relation to the upper and lower bands.
+
++    Chaikin Volatility - Chaikin Volatility measures volatility of a stock with a purpose of generating trading signals by looking for a sharp increase in volatility which may indicate end of a corrections down and end of down-rends.
+
++    Fibonacci Ratio, is similar to the Standard Bollinger bands with the only difference that Fibonacci bands are based on the Average True Range (ATR) instead of Standard Deviation and uses Fibonacci ratio as multiplier.
+
++    Force Index - Forth Index is volume based technical indicator which has volatility component in its calculations and which is used to reveal positive and negative money flow
+
++    Standard Deviation - The Standard Deviation is used in statistics to measure the variability or dispersion of a data set. If the data are very close to the average value (mean), we have a small standard deviation. If the data are dispersed over a large range of values, we have a large standard deviation.
+
++    True Strength Index - True Strength Index (TII) is a price based oscillator that carry volatility factor in its calculations. The TII is not used to measure volatility, but rather recognize bullish and bearish trends and reveal trend reversals.
+
++    Ultimate Oscillator - Ultimate Oscillator is used to spot overbought and oversold levels and generate trading signals on comparison of buying pressure and True Range (volatility factor).
+
++    Volatility indexes - The VIX (CBOE Volatility Index) is based on S&P 500 stock index option prices and measures the market's expectations of near-term volatility. VXN is based on NASDAQ 100 index (NDX) options. VXO is based on S&P 100 index (SP100) options. VIX, VXO and VXN are considered to be indicators of investor mood and market volatility.
+
++    Relative Volatility Index - The Relative Volatility Index is one of the unique volatility indicators that is used not just measure the volatility level but also the volatility direction. The RVI is also used to generate trading signals.
+
++    Ulcer Index - The Ulcer index is a volatility indicator which is used in technical analysis to assess the downside risk of a security (stock) wit purpose to compare various stocks drawdown risk.
+
++    V-MA - Volatility adjusted Moving Average is developed by our team. The main difference with Simple moving average is that this moving average has volatility factor embedded. While it cannot be used to measure the volatility it could be used as MA with better success as it automatically adjusted to the volatility.
+
++    V-MACD - Volatility adjusted MACD was developed by our analysts and is use on the Simple Moving Average (SMA) as Fast MA and Volatility adjusted Moving Average (V-MA) as Slow MA in MACD formula. The same as V-MA this technical indicator automatically adjust itself to the volatility level.
+
++    normalize data between -1 and 1
++    restrict the range of values in the dataset between any arbitrary points a and b using:
+	 X ′ = a + ( X − X min ) ( b − a ) / ( X max − X min )
++    drawdown: equivalent return = (%dd / (1 - %dd)) - 1
+
++ short term to long term volatility (21 / 63 day)
++ number of days and price change since last high and low
++ rolling return charts; day, month, year
++ Price (ohlc) * volume in relation to moving average, days in trend, % above/below etc.
+
++    Ed Easterling - relationship among inflation, earnings, and prices (inflation adjusted)
++    Shiller P/E www.econ.yale.edu/~shiller/data.htm
+
+
+    The number of stocks that are at new highs (or lows) and their difference (NH-NL)
+    The number of stocks that are currently trading above their moving average
+    The number of stocks with RSI above 70 (the price has risen rapidly)
+    The number of stocks with RSI below 30 (the price has declined rapidly)
+    The average value of the RSI for all stocks
+
+=======================
+
+Yahoo Finance
+Dow Jones Industrial Average, ^DJI, 9/10/1987
+S&P 500, ^GSPC, 9/10/1987
+Hang Seng Index, ^HSI, 9/10/1987
+Russell 2000, ^RUT, 9/10/1987
+CBOE Interest Rate 10 Year T, ^TNX, 9/10/1987
+
+DJI_yahoo bear_01: 4/23/1999 - 3/31/2003, bear_02: 9/17/07 - 3/20/2009
+GSPC_yahoo bear_01: 12/14/1999 - 10/16/2002, bear_02: 9/25/2007 - 3/16/2009
+HSI_yahoo bear_01: 7/27/1997 - 8/17/1998, bear_02: 3/20/2000 - 4/29/2003, bear_03: 10/23/2007 - 3/11/2009, bear_04: 4/19/2015 - 2/16/2016
+RUT_yahoo bear_01: 3/2/2000 - 3/21/2003, bear_02: 6/26/2007 - 3/11/2009, bear_03: 4/18/2011 - 10/7/2011, bear_04: 6/9/2015 - 2/18/16
+
+===
+
+Technical Indicators and Overlays
+https://school.stockcharts.com/doku.php?id=technical_indicators
+
+World Trading Data
+https://www.worldtradingdata.com/
+
+$SPXA50R < 25
+$BPSPX < 15
+
+20170817 TNDM, CRMD, ALT, BNED
+20170907 NLNK
+20170913 EFX, ZSAN
+20170915 CPB
+
+===
+
+RSI average - turning point
+TRIX, MACD, RSI(high) - RSI(low)
+Swarm RSI(h,l,c)
+Aroon osc 21, ema, turning point
+TRIX(21,13) crossovers
+EMA turning points, MACD(21,34,13) zeros
+RSI(13) - Ultimate(13,21,34) - TRIX(13,8) -EMA(21), SMA(8)
+Triple withcing, third Friday of Mar, Jun, Sep, Dec
+OBV turning points
+
+===
+
+https://www.alphavantage.co
+ALPHAVANTAGE_API_KEY=75BLTZSVMHR16563
+
+===
+

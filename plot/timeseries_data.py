@@ -37,7 +37,8 @@ def small_timeseries(ctx: dict):
     if DEBUG: logger.debug(f"database: {DB}")
 
     ctx["database"] = DB
-    df = utils_pd.create_df_from_sqlite_table_data(ctx=ctx)
+    # df = utils_pd.create_df_from_sqlite_table_data(ctx=ctx)
+    df = pd_utils.create_df_from_database_table()
     if DEBUG: logger.debug(f"dataframe\n{df} {type(df)}")
 
     # pivot_df = df.pivot(index='date', columns='ticker', values='cwap')
@@ -95,11 +96,13 @@ def timeseries(ctx: dict):
 
     # ctx["database"] = DB
 
-    stonk_df = utils_pd.create_df_from_one_column_in_each_table(ctx=ctx, indicator=ctx["target_indicator"])
+    # stonk_df = utils_pd.create_df_from_one_column_in_each_table(ctx=ctx, indicator=ctx["target_indicator"])
+    stonk_df = pd_utils.create_df_from_one_column_in_every_table()
     stonk_df = stonk_df.shift(periods=ctx["shift_period"], freq=None)
     if DEBUG: logger.debug(f"stonk_df\n{stonk_df}\ncolumns: {stonk_df.columns}")
 
-    target_df = utils_pd.create_df_from_one_column_in_each_table(ctx=ctx, indicator=ctx["target_indicator"])
+    # target_df = utils_pd.create_df_from_one_column_in_each_table(ctx=ctx, indicator=ctx["target_indicator"])
+    target_df = pd_utils.create_df_from_one_column_in_every_table()
     target_df = target_df[["SPXL", "YINN"]]
     # target_df = target_df.shift(periods=ctx["shift_period"], freq=None)
     if DEBUG: logger.debug(f"target_df:\n{target_df} {type(target_df)}")

@@ -1,5 +1,4 @@
 """pandas utilities"""
-
 import logging, logging.config
 import sqlite3
 
@@ -27,8 +26,10 @@ def create_df_from_one_column_in_every_table(db_path: str, column: str) -> pd.Da
     index_array = pd.read_sql(  # get a numpy ndarray of Date index
         f"SELECT date FROM {db_table_array[0]}", db_con
     ).date.values
+    # ).values
 
     df = pd.DataFrame(index=index_array)
+    # df.index = pd.to_datetime(df.index, unit="s")
 
     for table in db_table_array:
         df[table] = pd.read_sql(
@@ -54,10 +55,11 @@ def create_df_from_database_table(db_path: str, table: str) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    import os, unittest
+    import unittest
 
     if DEBUG:
         logger.debug(f"******* START - pd_utils.py *******")
+
 
     class TestDataframeUtilityFunctions(unittest.TestCase):
         """"""
@@ -115,9 +117,5 @@ if __name__ == "__main__":
         @classmethod
         def tearDownClass(cls):
             print(f"tearDown({cls})")
-            try:
-                os.remove("temp.db")
-            except OSError:
-                pass
 
     unittest.main()

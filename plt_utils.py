@@ -63,6 +63,12 @@ def plt_all_columns_from_dataframe(dataframe: pd.DataFrame):
     plt.close()
 
 
+def plt_savgol_filter_alt_params():
+    """"""
+    if DEBUG:
+        logger.debug(f"plt_savgol_filter_alt_params()")
+
+
 def plt_target_vs_indicator_timeseries(dataframe: pd.DataFrame, target_list: list, shift_period: int):
     """create series of lineplots comparing timeseries"""
     if DEBUG:
@@ -78,7 +84,7 @@ def plt_target_vs_indicator_timeseries(dataframe: pd.DataFrame, target_list: lis
             continue
         i += 1
         plot_df = pd.concat(objs=[dataframe[col], target_df], axis=1)
-        if DEBUG: logger.debug(f"plot_df ({i}/{total}):\n{plot_df}, {type(plot_df)}")
+        if DEBUG: logger.debug(f"plot_df ({i}/{total}):\n{plot_df}\n")
 
         # plot timeseries
         plt.figure(figsize=(10, 7.5))
@@ -112,7 +118,7 @@ if __name__ == "__main__":
         """"""
         @classmethod
         def setUpClass(cls):
-            print(f" setUp({cls})")
+            print(f"-setUp({cls})")
 
             cwap_dict = {
                 'index': [datetime.date(2025, 7, 2), datetime.date(2025, 7, 3), datetime.date(2025, 7, 7), datetime.date(2025, 7, 8), datetime.date(2025, 7, 9), datetime.date(2025, 7, 10), datetime.date(2025, 7, 11), datetime.date(2025, 7, 14), datetime.date(2025, 7, 15), datetime.date(2025, 7, 16), datetime.date(2025, 7, 17), datetime.date(2025, 7, 18), datetime.date(2025, 7, 21), datetime.date(2025, 7, 22), datetime.date(2025, 7, 23), datetime.date(2025, 7, 24), datetime.date(2025, 7, 25), datetime.date(2025, 7, 28), datetime.date(2025, 7, 29), datetime.date(2025, 7, 30), datetime.date(2025, 7, 31), datetime.date(2025, 8, 1), datetime.date(2025, 8, 4), datetime.date(2025, 8, 5), datetime.date(2025, 8, 6), datetime.date(2025, 8, 7), datetime.date(2025, 8, 8), datetime.date(2025, 8, 11), datetime.date(2025, 8, 12)],
@@ -129,26 +135,28 @@ if __name__ == "__main__":
             cls.cwap_df = pd.DataFrame.from_dict(data=cwap_dict, orient="tight")
             cls.sc_cwap_df = pd.DataFrame.from_dict(data=sc_cwap_dict, orient="tight")
 
-        # @unittest.skip
+        @unittest.skip
         def test_correlate_data(self):
-            if DEBUG:
-                logger.debug(f"test_correlate_data(self={self})")
+            if DEBUG: logger.debug(f"test_correlate_data(self={self})")
             correlate_data(dataframe=self.cwap_df, target_list=["SPXL", "SPXS", "YINN", "YANG"], shift_period=3)
 
         @unittest.skip
         def test_plt_all_columns_from_dataframe(self):
-            if DEBUG:
-                logger.debug(f"test_plt_all_columns_from_dataframe(self={self})")
+            if DEBUG: logger.debug(f"test_plt_all_columns_from_dataframe(self={self})")
             plt_all_columns_from_dataframe(dataframe=self.sc_cwap_df)
+
+        # @unittest.skip
+        def test_plt_savgol_filter_alt_params(self):
+            if DEBUG: logger.debug(f"test_plt_savgol_filter_alt_params()")
+            plt_savgol_filter_alt_params()
 
         @unittest.skip
         def test_plt_target_vs_indicator_timeseries(self):
-            if DEBUG:
-                logger.debug(f"test_plt_target_vs_indicator_timeseries(self={self})")
+            if DEBUG: logger.debug(f"test_plt_target_vs_indicator_timeseries(self={self})")
             plt_target_vs_indicator_timeseries(dataframe=self.sc_cwap_df, target_list=["SPXL", "SPXS", "YINN", "YANG"], shift_period=3)
 
         @classmethod
         def tearDownClass(cls):
-            print(f"tearDown({cls})")
+            print(f"\n-tearDown({cls})")
 
     unittest.main()

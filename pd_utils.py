@@ -98,27 +98,28 @@ if __name__ == "__main__":
                     f"SELECT name FROM sqlite_schema WHERE type='table' AND name NOT like 'sqlite%'", cls.con,
                 ).name.values
 
+        # @unittest.skip
         def test_database_exists(self):
             self.assertListEqual(list(self.db_table_array), self.table_list)
 
+        # @unittest.skip
         def test_create_df_from_database_table(self):
             df = create_df_from_database_table(db_path="file:temp.db?mode=memory&cache=shared", table=self.table_list[0])
-            # print(f"{self.table_list[0]} dataframe:\n{df}")
-            print(f"Dataframe {df.name}:\n{df}")
+            if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
 
             df = create_df_from_database_table(db_path="file:temp.db?mode=memory&cache=shared", table=self.table_list[1])
-            # print(f"{self.table_list[1]} dataframe:\n{df}")
-            print(f"Dataframe {df.name}:\n{df}")
+            if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
 
+        # @unittest.skip
         def test_create_df_from_one_column_in_each_table(self):
             df = create_df_from_one_column_in_every_table(db_path="file:temp.db?mode=memory&cache=shared", column=self.data_list[0])
-            print(f"Dataframe {df.name}:\n{df}")
+            if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
 
             df = create_df_from_one_column_in_every_table(db_path="file:temp.db?mode=memory&cache=shared", column=self.data_list[1])
-            print(f"Dataframe {df.name}:\n{df}")
+            if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}")
 
         @classmethod
         def tearDownClass(cls):
-            print(f"tearDown({cls})")
+            print(f"\n-tearDown({cls})")
 
     unittest.main()

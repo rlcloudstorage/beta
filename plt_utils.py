@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+import pd_utils
+
 
 DEBUG = True
 
@@ -13,45 +15,83 @@ logging.config.fileConfig(fname="logger.ini")
 logger = logging.getLogger(__name__)
 
 
-def correlate_data(dataframe: pd.DataFrame, target: list, shift_period: int):
+def correlate_data(dataframe: pd.DataFrame, target_list: list, shift_period: int):
     """"""
     if DEBUG:
-        logger.debug(f"correlate_data(dataframe={type(dataframe)}, target={target}, shift_period={shift_period})")
+        logger.debug(f"correlate_data(dataframe={type(dataframe)}, target_list={target_list}, shift_period={shift_period})")
 
-    # mask columns in target_list, then shift columns not in target list by shift_period
-    shift_cols = dataframe.columns[~(dataframe.columns.isin(target))]
-    dataframe[shift_cols] = dataframe[shift_cols].shift(periods=shift_period)
+    dataframe = _timeshift_dataframe_columns(df=dataframe, tl=target_list, sp=shift_period)
 
     # create pandas correlation matrix
     corr_df = (dataframe.corr(method="kendall") * 100).round().astype(int)
     if DEBUG: logger.debug(f"correlation matrix:\n{corr_df}")
 
     # plot correlation matrix
-    plt.figure(figsize=(11, 8.5))
+    plt.figure(figsize=(10, 7.5))
     sns.color_palette("pastel")
     sns.set_context("paper")
     sns.heatmap(
         data=corr_df, mask=np.triu(np.ones_like(corr_df, dtype=bool)),
         annot=True, vmax=100, vmin=-100, center=0, square=True,
         linewidths=0.5, cbar_kws={"shrink": 0.2},
-    ).set_title(f"{target} - {shift_period} period shift")
+    ).set_title(
+        f"{shift_period} Period Shift - {(', '.join(target_list))}"
+    )
     plt.show()
     plt.close()
 
 
-def plt_scaled_data(dataframe: pd.DataFrame):
+def plt_all_columns_from_dataframe(dataframe: pd.DataFrame):
     """"""
     if DEBUG:
-        logger.debug(f"plt_scaled_data(dataframe=\n{dataframe})")
+        logger.debug(f"plt_all_columns_from_dataframe(dataframe={type(dataframe)})")
+
+    plt.figure(figsize=(10, 7.5))
+    sns.set_context("paper")
+    sns.lineplot(
+        data=dataframe, palette="pastel", linewidth=2.5,
+    ).set_title(
+        f"Dataframe"
+    )
+    plt.show()
+    plt.close()
+
+
+def plt_target_vs_indicator_timeseries(dataframe: pd.DataFrame):
+    """"""
+    if DEBUG:
+        logger.debug(f"plt_target_vs_indicator_timeseries(dataframe={type(dataframe)})")
+
+
+def _timeshift_dataframe_columns(df: pd.DataFrame, tl: list, sp: int):
+    """mask columns in tl, then shift columns not in target list by sp"""
+
+    shift_cols = df.columns[~(df.columns.isin(tl))]
+    df[shift_cols] = df[shift_cols].shift(periods=sp)
+
+    return df
+
+
+def main():
+    if DEBUG:
+        logger.debug(f"main()")
+
+    DB = "/home/la/dev/data/yfinance_sm.db"
+
+    df = pd_utils.create_df_from_one_column_in_every_table(db_path=DB, column="cwap")
+    if DEBUG: logger.debug(f"{df.name} dataframe:\n{df}")
+
+    df_dict = df.to_dict(orient="tight")
+    if DEBUG: logger.debug(f"{df.name}_dict = {df_dict}")
 
 
 if __name__ == "__main__":
-    import unittest
-
-    import datetime
+    import datetime, unittest
 
     if DEBUG:
         logger.debug(f"******* START - plt_utils.py *******")
+
+    # main()
 
 
     class TestPlotterUtilityFunctions(unittest.TestCase):
@@ -79,13 +119,19 @@ if __name__ == "__main__":
         def test_correlate_data(self):
             if DEBUG:
                 logger.debug(f"test_correlate_data(self={self})")
-            correlate_data(dataframe=self.cwap_df, target=["YINN", "YANG"], shift_period=3)
+            correlate_data(dataframe=self.cwap_df, target_list=["YINN", "YANG"], shift_period=3)
+
+        @unittest.skip
+        def test_plt_all_columns_from_dataframe(self):
+            if DEBUG:
+                logger.debug(f"test_plt_all_columns_from_dataframe(self={self})")
+            plt_all_columns_from_dataframe(dataframe=self.sc_cwap_df)
 
         # @unittest.skip
-        def test_plt_scaled_data(self):
+        def test_plt_target_vs_indicator_timeseries(self):
             if DEBUG:
-                logger.debug(f"test_plt_scaled_data(self={self})")
-                plt_scaled_data(dataframe=self.sc_cwap_df)
+                logger.debug(f"test_plt_target_vs_indicator_timeseries(self={self})")
+            plt_target_vs_indicator_timeseries(dataframe=self.cwap_df)
 
         @classmethod
         def tearDownClass(cls):

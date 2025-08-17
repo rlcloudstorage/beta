@@ -29,7 +29,7 @@ def create_df_from_one_column_in_every_table(db_path: str, column: str) -> pd.Da
     # ).values
 
     df = pd.DataFrame(index=index_array)
-    # df.index = pd.to_datetime(df.index, unit="s")
+    df.name = column
 
     for table in db_table_array:
         df[table] = pd.read_sql(
@@ -48,6 +48,7 @@ def create_df_from_database_table(db_path: str, table: str) -> pd.DataFrame:
 
     db_con = sqlite3.connect(db_path)
     df = pd.read_sql(f"SELECT * FROM {table}", db_con, index_col="date")
+    df.name = table
     df.index = pd.to_datetime(df.index, unit="s").date
     df.index.names = ['date']
 
@@ -102,17 +103,19 @@ if __name__ == "__main__":
 
         def test_create_df_from_database_table(self):
             df = create_df_from_database_table(db_path="file:temp.db?mode=memory&cache=shared", table=self.table_list[0])
-            print(f"{self.table_list[0]} dataframe:\n{df}")
+            # print(f"{self.table_list[0]} dataframe:\n{df}")
+            print(f"Dataframe {df.name}:\n{df}")
 
             df = create_df_from_database_table(db_path="file:temp.db?mode=memory&cache=shared", table=self.table_list[1])
-            print(f"{self.table_list[1]} dataframe:\n{df}")
+            # print(f"{self.table_list[1]} dataframe:\n{df}")
+            print(f"Dataframe {df.name}:\n{df}")
 
         def test_create_df_from_one_column_in_each_table(self):
             df = create_df_from_one_column_in_every_table(db_path="file:temp.db?mode=memory&cache=shared", column=self.data_list[0])
-            print(f"{self.data_list[0]} dataframe:\n{df}")
+            print(f"Dataframe {df.name}:\n{df}")
 
             df = create_df_from_one_column_in_every_table(db_path="file:temp.db?mode=memory&cache=shared", column=self.data_list[1])
-            print(f"{self.data_list[1]} dataframe:\n{df}")
+            print(f"Dataframe {df.name}:\n{df}")
 
         @classmethod
         def tearDownClass(cls):

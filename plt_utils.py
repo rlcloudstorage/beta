@@ -6,8 +6,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-import pd_utils
-
 
 DEBUG = True
 
@@ -16,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def correlate_data(dataframe: pd.DataFrame, target_list: list, shift_period: int):
-    """"""
+    """log correlation matrix to debug.log, plot correlation matrix heatmap"""
     if DEBUG:
         logger.debug(f"correlate_data(dataframe={type(dataframe)}, target_list={target_list}, shift_period={shift_period})")
 
@@ -28,39 +26,70 @@ def correlate_data(dataframe: pd.DataFrame, target_list: list, shift_period: int
 
     # plot correlation matrix
     plt.figure(figsize=(10, 7.5))
-    sns.color_palette("pastel")
     sns.set_context("paper")
     sns.heatmap(
         data=corr_df, mask=np.triu(np.ones_like(corr_df, dtype=bool)),
         annot=True, vmax=100, vmin=-100, center=0, square=True,
-        linewidths=0.5, cbar_kws={"shrink": 0.2},
+        linewidths=0.5, cbar_kws={"shrink": 0.2}, cmap="coolwarm",
     ).set_title(
-        f"{shift_period} Period Shift - {(', '.join(target_list))}"
+        f"Correlation - {shift_period} Period Timeshift {(', '.join(target_list))}"
     )
     plt.show()
     plt.close()
 
 
 def plt_all_columns_from_dataframe(dataframe: pd.DataFrame):
-    """"""
+    """plot dataframe"""
     if DEBUG:
         logger.debug(f"plt_all_columns_from_dataframe(dataframe={type(dataframe)})")
 
-    plt.figure(figsize=(10, 7.5))
-    sns.set_context("paper")
-    sns.lineplot(
-        data=dataframe, palette="pastel", linewidth=2.5,
-    ).set_title(
-        f"Dataframe"
-    )
+    try:
+        plt.figure(figsize=(10, 7.5))
+        sns.set_context("paper")
+        sns.lineplot(
+            data=dataframe, palette="pastel", linewidth=2.5,
+        ).set_title(
+            f"Dataframe {dataframe.name}"
+        )
+    except:
+        plt.close()
+        plt.figure(figsize=(10, 7.5))
+        sns.set_context("paper")
+        sns.lineplot(
+            data=dataframe, palette="pastel", linewidth=2.5,
+        ).set_title("Dataframe")
+
     plt.show()
     plt.close()
 
 
-def plt_target_vs_indicator_timeseries(dataframe: pd.DataFrame):
-    """"""
+def plt_target_vs_indicator_timeseries(dataframe: pd.DataFrame, target_list: list, shift_period: int):
+    """create series of lineplots comparing timeseries"""
     if DEBUG:
-        logger.debug(f"plt_target_vs_indicator_timeseries(dataframe={type(dataframe)})")
+        logger.debug(f"plt_target_vs_indicator_timeseries(dataframe={type(dataframe)}, target_list={target_list}, shift_period={shift_period})")
+
+    dataframe = _timeshift_dataframe_columns(df=dataframe, tl=target_list, sp=shift_period)
+    target_df = dataframe[target_list].copy()
+    total = len(dataframe.columns)- len(target_df.columns)
+    i = 0
+
+    for col in dataframe.columns:
+        if dataframe[col].name in target_list:
+            continue
+        i += 1
+        plot_df = pd.concat(objs=[dataframe[col], target_df], axis=1)
+        if DEBUG: logger.debug(f"plot_df ({i}/{total}):\n{plot_df}, {type(plot_df)}")
+
+        # plot timeseries
+        plt.figure(figsize=(10, 7.5))
+        sns.set_context("paper")
+        sns.lineplot(
+            data=plot_df, palette="pastel", linewidth=2.5,
+        ).set_title(
+            f"{shift_period} Period Timeshift {dataframe[col].name} vs. {(', '.join(target_list))} ({i}/{total})"
+        )
+        plt.show()
+        plt.close()
 
 
 def _timeshift_dataframe_columns(df: pd.DataFrame, tl: list, sp: int):
@@ -72,26 +101,11 @@ def _timeshift_dataframe_columns(df: pd.DataFrame, tl: list, sp: int):
     return df
 
 
-def main():
-    if DEBUG:
-        logger.debug(f"main()")
-
-    DB = "/home/la/dev/data/yfinance_sm.db"
-
-    df = pd_utils.create_df_from_one_column_in_every_table(db_path=DB, column="cwap")
-    if DEBUG: logger.debug(f"{df.name} dataframe:\n{df}")
-
-    df_dict = df.to_dict(orient="tight")
-    if DEBUG: logger.debug(f"{df.name}_dict = {df_dict}")
-
-
 if __name__ == "__main__":
     import datetime, unittest
 
     if DEBUG:
         logger.debug(f"******* START - plt_utils.py *******")
-
-    # main()
 
 
     class TestPlotterUtilityFunctions(unittest.TestCase):
@@ -115,11 +129,11 @@ if __name__ == "__main__":
             cls.cwap_df = pd.DataFrame.from_dict(data=cwap_dict, orient="tight")
             cls.sc_cwap_df = pd.DataFrame.from_dict(data=sc_cwap_dict, orient="tight")
 
-        @unittest.skip
+        # @unittest.skip
         def test_correlate_data(self):
             if DEBUG:
                 logger.debug(f"test_correlate_data(self={self})")
-            correlate_data(dataframe=self.cwap_df, target_list=["YINN", "YANG"], shift_period=3)
+            correlate_data(dataframe=self.cwap_df, target_list=["SPXL", "SPXS", "YINN", "YANG"], shift_period=3)
 
         @unittest.skip
         def test_plt_all_columns_from_dataframe(self):
@@ -127,11 +141,11 @@ if __name__ == "__main__":
                 logger.debug(f"test_plt_all_columns_from_dataframe(self={self})")
             plt_all_columns_from_dataframe(dataframe=self.sc_cwap_df)
 
-        # @unittest.skip
+        @unittest.skip
         def test_plt_target_vs_indicator_timeseries(self):
             if DEBUG:
                 logger.debug(f"test_plt_target_vs_indicator_timeseries(self={self})")
-            plt_target_vs_indicator_timeseries(dataframe=self.cwap_df)
+            plt_target_vs_indicator_timeseries(dataframe=self.sc_cwap_df, target_list=["SPXL", "SPXS", "YINN", "YANG"], shift_period=3)
 
         @classmethod
         def tearDownClass(cls):

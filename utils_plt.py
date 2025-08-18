@@ -41,32 +41,51 @@ def correlate_data(dataframe: pd.DataFrame, target_list: list, shift_period: int
 def plt_all_columns_from_dataframe(dataframe: pd.DataFrame):
     """plot dataframe"""
     if DEBUG:
-        logger.debug(f"plt_all_columns_from_dataframe(dataframe={type(dataframe)})")
+        logger.debug(f"plt_all_columns_from_dataframe({dataframe.name} dataframe:\n{dataframe})")
 
-    try:
-        plt.figure(figsize=(10, 7.5))
-        sns.set_context("paper")
-        sns.lineplot(
-            data=dataframe, palette="pastel", linewidth=2.5,
-        ).set_title(
-            f"Dataframe {dataframe.name}"
-        )
-    except:
-        plt.close()
-        plt.figure(figsize=(10, 7.5))
-        sns.set_context("paper")
-        sns.lineplot(
-            data=dataframe, palette="pastel", linewidth=2.5,
-        ).set_title("Dataframe")
+    plt.figure(figsize=(10, 7.5))
+    sns.set_context("paper")
+    sns.lineplot(
+        data=dataframe, palette="pastel", linewidth=2.5,
+    ).set_title(f"{dataframe.name} Dataframe")
 
     plt.show()
     plt.close()
 
 
-def plt_savgol_filter_alt_params():
+def plt_savgol_filter_alt_params(dataframe: pd.DataFrame, win_sz_list: list, polyorder: int):
     """"""
+    from scipy.signal import savgol_filter
+
     if DEBUG:
-        logger.debug(f"plt_savgol_filter_alt_params()")
+        logger.debug(f"plt_savgol_filter_alt_params(dataframe'{type(dataframe)}, win_sz_list={win_sz_list}, poly_list={polyorder})")
+
+    for col in dataframe.columns:
+        fig, axs = plt.subplots(ncols=2, nrows=2, figsize=(10, 7.5))
+        plt.xlabel("Date")
+        plt.ylabel("Value")
+
+        raw = pd.Series(data=dataframe[col], name=dataframe[col].name)
+
+        for j, w in enumerate(win_sz_list):
+            smooth = savgol_filter(x=raw, window_length=w, polyorder=polyorder, deriv=0)
+
+            axs[0, j].plot(raw.index, raw, label=f"raw {dataframe.name} data")
+            axs[0, j].plot(raw.index, smooth, label=f"smooth {dataframe.name} data")
+            axs[0, j].legend()
+            axs[0, j].set_title(f"{raw.name} - window {w}, polyorder {polyorder}")
+
+        for j, w in enumerate(win_sz_list):
+            slope = savgol_filter(x=raw, window_length=w, polyorder=polyorder, deriv=1)
+
+            # axs[i+1, j].plot(raw.index, raw, label=f"raw {dataframe.name} data")
+            axs[1, j].plot(raw.index, slope, label=f"smooth data slope")
+            axs[1, j].legend()
+            axs[1, j].set_title(f"{raw.name} - window {w}, polyorder {polyorder}")
+
+        plt.tight_layout()
+        plt.show()
+        plt.close()
 
 
 def plt_target_vs_indicator_timeseries(dataframe: pd.DataFrame, target_list: list, shift_period: int):
@@ -133,26 +152,28 @@ if __name__ == "__main__":
                 'index_names': ['date'], 'column_names': [None]
             }
             cls.cwap_df = pd.DataFrame.from_dict(data=cwap_dict, orient="tight")
+            cls.cwap_df.name = "cwap"
             cls.sc_cwap_df = pd.DataFrame.from_dict(data=sc_cwap_dict, orient="tight")
+            cls.sc_cwap_df.name = "sc_cwap"
 
         @unittest.skip
         def test_correlate_data(self):
-            if DEBUG: logger.debug(f"test_correlate_data(self={self})")
+            # if DEBUG: logger.debug(f"test_correlate_data(self={self})")
             correlate_data(dataframe=self.cwap_df, target_list=["SPXL", "SPXS", "YINN", "YANG"], shift_period=3)
 
         @unittest.skip
         def test_plt_all_columns_from_dataframe(self):
-            if DEBUG: logger.debug(f"test_plt_all_columns_from_dataframe(self={self})")
+            # if DEBUG: logger.debug(f"test_plt_all_columns_from_dataframe(self={self})")
             plt_all_columns_from_dataframe(dataframe=self.sc_cwap_df)
 
-        # @unittest.skip
+        @unittest.skip
         def test_plt_savgol_filter_alt_params(self):
-            if DEBUG: logger.debug(f"test_plt_savgol_filter_alt_params()")
-            plt_savgol_filter_alt_params()
+            # if DEBUG: logger.debug(f"test_plt_savgol_filter_alt_params()")
+            plt_savgol_filter_alt_params(dataframe=self.cwap_df, win_sz_list=[7, 14], polyorder=2)
 
         @unittest.skip
         def test_plt_target_vs_indicator_timeseries(self):
-            if DEBUG: logger.debug(f"test_plt_target_vs_indicator_timeseries(self={self})")
+            # if DEBUG: logger.debug(f"test_plt_target_vs_indicator_timeseries(self={self})")
             plt_target_vs_indicator_timeseries(dataframe=self.sc_cwap_df, target_list=["SPXL", "SPXS", "YINN", "YANG"], shift_period=3)
 
         @classmethod

@@ -2,6 +2,7 @@
 import logging, logging.config
 import sqlite3
 
+import numpy as np
 import pandas as pd
 
 # DEBUG = False
@@ -11,10 +12,10 @@ logging.config.fileConfig(fname="logger.ini")
 logger = logging.getLogger(__name__)
 
 
-def create_df_from_one_column_in_every_table(db_path: str, column: str) -> pd.DataFrame:
+def create_df_from_one_column_in_each_table(db_path: str, column: str, table_list: list=[]) -> pd.DataFrame:
     """Select data from the named column out of each table in the sqlite database"""
     if DEBUG:
-        logger.debug(f"create_df_from_one_column_in_every_table(db_path={db_path}, column={column})")
+        logger.debug(f"create_df_from_one_column_in_each_table(db_path={db_path}, column={column}, table_list={table_list})")
 
     db_con = sqlite3.connect(db_path)
 
@@ -23,13 +24,24 @@ def create_df_from_one_column_in_every_table(db_path: str, column: str) -> pd.Da
         f"SELECT name FROM sqlite_schema WHERE type='table' AND name NOT like 'sqlite%'", db_con,
     ).name.values
 
-    index_array = pd.read_sql(  # get a numpy ndarray of Date index
+    # get a numpy ndarray of Date index
+    index_array = pd.read_sql(
         f"SELECT date FROM {db_table_array[0]}", db_con
     ).date.values
     # ).values
 
     df = pd.DataFrame(index=index_array)
     df.name = column
+
+    # if table_list is empty, use db_table_array
+    table_list = db_table_array if not table_list else table_list
+
+    # remove unwanted tables from db_table_array
+    del_list = list()
+    for i, table in enumerate(db_table_array):
+        if table not in table_list:
+            del_list.append(i)
+    db_table_array = np.delete(arr=db_table_array, obj=del_list)
 
     for table in db_table_array:
         df[table] = pd.read_sql(
@@ -69,7 +81,7 @@ if __name__ == "__main__":
             print(f" setUp({cls})")
 
             cls.data_list = ["cwap", "sc_cwap"]
-            cls.table_list = ["YINN", "YANG"]
+            cls.table_list = ["HYG", "SPXL", "SPXS", "XLF", "XLY"]
 
             with sqlite3.connect("file:temp.db?mode=memory&cache=shared", uri=True) as cls.con:
 
@@ -85,13 +97,26 @@ if __name__ == "__main__":
                     )
                 cls.con.executescript(
                     """
-                    INSERT INTO YINN (date, cwap, sc_cwap) VALUES (1754625600, 4299, 860);
-                    INSERT INTO YINN (date, cwap, sc_cwap) VALUES (1754884800, 4214, 876);
-                    INSERT INTO YINN (date, cwap, sc_cwap) VALUES (1754971200, 4377, 1095);
 
-                    INSERT INTO YANG (date, cwap, sc_cwap) VALUES (1754625600, 2865, 1129);
-                    INSERT INTO YANG (date, cwap, sc_cwap) VALUES (1754884800, 2929, 1134);
-                    INSERT INTO YANG (date, cwap, sc_cwap) VALUES (1754971200, 2813, 910);
+                    INSERT INTO HYG (date, cwap, sc_cwap) VALUES (1754625600, 8021, 919);
+                    INSERT INTO HYG (date, cwap, sc_cwap) VALUES (1754884800, 8022, 1000);
+                    INSERT INTO HYG (date, cwap, sc_cwap) VALUES (1754971200, 8035, 1185);
+
+                    INSERT INTO SPXL (date, cwap, sc_cwap) VALUES (1754625600, 18680, 1158);
+                    INSERT INTO SPXL (date, cwap, sc_cwap) VALUES (1754884800, 18670, 1000);
+                    INSERT INTO SPXL (date, cwap, sc_cwap) VALUES (1754971200, 19093, 1195);
+
+                    INSERT INTO SPXS (date, cwap, sc_cwap) VALUES (1754625600, 436, 844);
+                    INSERT INTO SPXS (date, cwap, sc_cwap) VALUES (1754884800, 437, 1000);
+                    INSERT INTO SPXS (date, cwap, sc_cwap) VALUES (1754971200, 426, 818);
+
+                    INSERT INTO XLF (date, cwap, sc_cwap) VALUES (1754625600, 5179, 1000);
+                    INSERT INTO XLF (date, cwap, sc_cwap) VALUES (1754884800, 5185, 1040);
+                    INSERT INTO XLF (date, cwap, sc_cwap) VALUES (1754971200, 5238, 1179);
+
+                    INSERT INTO XLY (date, cwap, sc_cwap) VALUES (1754625600, 22396, 1082);
+                    INSERT INTO XLY (date, cwap, sc_cwap) VALUES (1754884800, 22455, 1096);
+                    INSERT INTO XLY (date, cwap, sc_cwap) VALUES (1754971200, 22623, 1148);
                     """
                 )
                 cls.db_table_array = pd.read_sql(
@@ -104,19 +129,31 @@ if __name__ == "__main__":
 
         # @unittest.skip
         def test_create_df_from_database_table(self):
-            df = create_df_from_database_table(db_path="file:temp.db?mode=memory&cache=shared", table=self.table_list[0])
-            if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
-
-            df = create_df_from_database_table(db_path="file:temp.db?mode=memory&cache=shared", table=self.table_list[1])
-            if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
+            for table in self.table_list:
+                df = create_df_from_database_table(
+                    db_path="file:temp.db?mode=memory&cache=shared", table=table
+                )
+                if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
 
         # @unittest.skip
         def test_create_df_from_one_column_in_each_table(self):
-            df = create_df_from_one_column_in_every_table(db_path="file:temp.db?mode=memory&cache=shared", column=self.data_list[0])
-            if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
+            for col in self.data_list:  # use default table_list
+                df = create_df_from_one_column_in_each_table(
+                    db_path="file:temp.db?mode=memory&cache=shared", column=col
+                )
+                if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
 
-            df = create_df_from_one_column_in_every_table(db_path="file:temp.db?mode=memory&cache=shared", column=self.data_list[1])
-            if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}")
+            for col in self.data_list:  # use provided table_list
+                df = create_df_from_one_column_in_each_table(
+                    db_path="file:temp.db?mode=memory&cache=shared", column=col, table_list=["SPXL", "SPXS"]
+                )
+                if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
+
+            for col in self.data_list:  # use table_list with mistakes
+                df = create_df_from_one_column_in_each_table(
+                    db_path="file:temp.db?mode=memory&cache=shared", column=col, table_list=["YINN", "XXX"]
+                )
+                if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
 
         @classmethod
         def tearDownClass(cls):

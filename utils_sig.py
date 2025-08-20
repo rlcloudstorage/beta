@@ -58,6 +58,8 @@ def savgol_filter_slope_change_signal(dataframe: pd.DataFrame, win_length: int, 
     sig = sig_df.sum(axis=1, numeric_only=True)
     if DEBUG: logger.debug(f"{dataframe.name} signal:\n{sig}, {type(sig)}")
 
+    return sig
+
 
 if __name__ == "__main__":
     import datetime, unittest
@@ -92,7 +94,7 @@ if __name__ == "__main__":
         # @unittest.skip
         def test_savgol_filter_slope_change_signal(self):
             # if DEBUG: logger.debug(f"test_savgol_filter_slope_change_signal(self={self})")
-            savgol_filter_slope_change_signal(dataframe=self.china_df, win_length=3, poly_order=2)
+            savgol_filter_slope_change_signal(dataframe=self.usa_df, win_length=3, poly_order=2)
 
         @classmethod
         def tearDownClass(cls):

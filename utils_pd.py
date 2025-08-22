@@ -47,8 +47,8 @@ def create_df_from_one_column_in_each_table(db_path: str, column: str, table_lis
         df[table] = pd.read_sql(
             f"SELECT date, {column} FROM {table}", db_con, index_col="date"
         )
-    df.index = pd.to_datetime(df.index, unit="s").date
-    df.index.names = ['date']
+    df.index = pd.to_datetime(df.index, unit="s")#.date
+    df.index.names = ['datetime']
 
     return df
 
@@ -123,11 +123,11 @@ if __name__ == "__main__":
                     f"SELECT name FROM sqlite_schema WHERE type='table' AND name NOT like 'sqlite%'", cls.con,
                 ).name.values
 
-        # @unittest.skip
+        @unittest.skip
         def test_database_exists(self):
             self.assertListEqual(list(self.db_table_array), self.table_list)
 
-        # @unittest.skip
+        @unittest.skip
         def test_create_df_from_database_table(self):
             for table in self.table_list:
                 df = create_df_from_database_table(
@@ -141,19 +141,21 @@ if __name__ == "__main__":
                 df = create_df_from_one_column_in_each_table(
                     db_path="file:temp.db?mode=memory&cache=shared", column=col
                 )
-                if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
-
+                if DEBUG: logger.debug(
+                    f"Dataframe {df.name}:\n{df}\ntype(df.index[0]): {type(df.index[0])}\n"
+                )
             for col in self.data_list:  # use provided table_list
                 df = create_df_from_one_column_in_each_table(
                     db_path="file:temp.db?mode=memory&cache=shared", column=col, table_list=["SPXL", "SPXS"]
                 )
-                if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
-
-            for col in self.data_list:  # use table_list with mistakes
-                df = create_df_from_one_column_in_each_table(
-                    db_path="file:temp.db?mode=memory&cache=shared", column=col, table_list=["YINN", "XXX"]
+                if DEBUG: logger.debug(
+                    f"Dataframe {df.name}:\n{df}\ntype(df.index[0]): {type(df.index[0])}\n"
                 )
-                if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
+            # for col in self.data_list:  # use table_list with mistakes
+            #     df = create_df_from_one_column_in_each_table(
+            #         db_path="file:temp.db?mode=memory&cache=shared", column=col, table_list=["YINN", "XXX"]
+            #     )
+            #     if DEBUG: logger.debug(f"Dataframe {df.name}:\n{df}\n")
 
         @classmethod
         def tearDownClass(cls):

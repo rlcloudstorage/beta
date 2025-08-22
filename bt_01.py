@@ -2,11 +2,9 @@
 import logging, logging.config
 
 import backtrader as bt
-import backtrader.indicators as btind
-import backtrader.feeds as btfeeds
-import pandas as pd
 
-import utils_pd
+import pandas
+from pandas import Timestamp
 
 
 DEBUG = True
@@ -18,53 +16,114 @@ logger = logging.getLogger(__name__)
 ctx = {}
 
 
-def main(self) -> None:
-    if DEBUG:
-        logger.debug(f"main(self={self})")
-    import utils_sig
-    usa_sig = utils_sig.savgol_filter_slope_change_signal(dataframe=self.usa_df, win_length=3, poly_order=2)
-    usa_sig_dict = usa_sig.to_dict()
-    print(f"usa_sig_dict = {usa_sig_dict}")
+class PandasDataUSA(bt.feeds.PandasData):
+
+    lines = ("SPXL", "SPXS")
+    params = (
+        ("datetime", None),
+        ("SPXL", -1), ("SPXS", -1),
+        ("open", None), ("high", None), ("low", None), ("close", None),
+        ("volume", None), ("openinterest", None),
+    )
+    datafields = bt.feeds.PandasData.datafields + (["SPXL", "SPXS",])
+
+
+class TestStrategy(bt.Strategy):
+
+    def log(self, txt: str, dt=None):
+        dt = dt or self.datas[0].datetime.date(0)
+        print(f"{dt.isoformat()}, {txt}")
+
+    def __init__(self):
+        self.dataclose = self.datas[0].SPXL
+        self.order = None
+        self.buyprice = None
+        self.sellcomm = None
+
+    def notify_order(self, order):
+        if order.status in [order.Submitted, order.Accepted]:
+            return
+
+        if order.status in [order.Completed]:
+            if order.isbuy():
+                self.log(txt=f" *** BUY EXECUTED ***")
+            elif order.issell():
+                self.log(txt=f" *** SELL EXECUTED ***")
+
+            self.bar_executed = len(self)
+
+        elif order.status in [order.Cancelled, order.Margin, order.Rejected]:
+            self.log(txt=f" *** ORDER CANCEL ***")
+
+        self.order = None
+
+    def next(self):
+        self.log(txt=f"close: {self.dataclose[0]}")
+
+        if self.order:
+            return
+
+        if not self.position:
+
+            if self.dataclose[0] < self.dataclose[-1]:
+                if self.dataclose[-1] < self.dataclose[-2]:
+                    self.log(txt=f" *** CREATE BUY ***")
+                    self.order = self.buy()
+
+        else:
+            if len(self) >= (self.bar_executed + 5):
+                self.log(" *** CREATE SELL ***")
+
+                self.order = self.sell()
+
+
+def main() -> None:
+    if DEBUG: logger.debug(f"main()")
 
 
 if __name__ == "__main__":
-    import datetime, unittest
+    import unittest
 
-    if DEBUG:
-        logger.debug(f"******* START *******")
+    if DEBUG: logger.debug(f"******* START BACKTEST *******")
 
+    spx_dict = {
+        'index': [Timestamp('2025-07-02 04:00:00'), Timestamp('2025-07-03 04:00:00'), Timestamp('2025-07-07 04:00:00'), Timestamp('2025-07-08 04:00:00'), Timestamp('2025-07-09 04:00:00'), Timestamp('2025-07-10 04:00:00'), Timestamp('2025-07-11 04:00:00'), Timestamp('2025-07-14 04:00:00'), Timestamp('2025-07-15 04:00:00'), Timestamp('2025-07-16 04:00:00'), Timestamp('2025-07-17 04:00:00'), Timestamp('2025-07-18 04:00:00'), Timestamp('2025-07-21 04:00:00'), Timestamp('2025-07-22 04:00:00'), Timestamp('2025-07-23 04:00:00'), Timestamp('2025-07-24 04:00:00'), Timestamp('2025-07-25 04:00:00'), Timestamp('2025-07-28 04:00:00'), Timestamp('2025-07-29 04:00:00'), Timestamp('2025-07-30 04:00:00'), Timestamp('2025-07-31 04:00:00'), Timestamp('2025-08-01 04:00:00'), Timestamp('2025-08-04 04:00:00'), Timestamp('2025-08-05 04:00:00'), Timestamp('2025-08-06 04:00:00'), Timestamp('2025-08-07 04:00:00'), Timestamp('2025-08-08 04:00:00'), Timestamp('2025-08-11 04:00:00'), Timestamp('2025-08-12 04:00:00')],
+        'columns': ['SPXL', 'SPXS'],
+        'data': [[17468, 466], [17902, 455], [17552, 465], [17528, 466], [17763, 459], [17927, 454], [17739, 460], [17796, 458], [17740, 460], [17669, 462], [18035, 452], [18074, 452], [18208, 448], [18118, 450], [18519, 440], [18662, 437], [18808, 434], [18826, 434], [18732, 436], [18610, 439], [18526, 441], [17516, 465], [18140, 450], [18062, 450], [18296, 445], [18375, 443], [18680, 436], [18670, 437], [19093, 426]],
+        'index_names': ['datetime'], 'column_names': [None]
+    }
+    spx_df = pandas.DataFrame.from_dict(data=spx_dict, orient="tight")
+    spx_df.name = "spx"
+
+    main()
+
+# # =======
+
+#     cerebro = bt.Cerebro()
+#     cerebro.broker.setcash(10_000_000.00)
+#     cerebro.broker.setcommission(commission=0.001)
+#     cerebro.addstrategy(TestStrategy)
+
+#     data = PandasDataUSA(dataname=spx_df, datetime=-1)
+#     if DEBUG: logger.debug(f"data: {data.datafields}")
+
+#     cerebro.adddata(data=data, name="spx")
+#     print(f"Starting Value: {cerebro.broker.getvalue():,}")
+
+#     cerebro.run()
+#     print(f"Ending Value:   {cerebro.broker.getvalue():,}")
+
+# # =======
 
     class TestBacktestingFunctions(unittest.TestCase):
         """"""
         @classmethod
         def setUpClass(cls):
-            print(f"-setUp({cls})")
-
-            usa_dict = {
-                'index': [datetime.date(2025, 7, 2), datetime.date(2025, 7, 3), datetime.date(2025, 7, 7), datetime.date(2025, 7, 8), datetime.date(2025, 7, 9), datetime.date(2025, 7, 10), datetime.date(2025, 7, 11), datetime.date(2025, 7, 14), datetime.date(2025, 7, 15), datetime.date(2025, 7, 16), datetime.date(2025, 7, 17), datetime.date(2025, 7, 18), datetime.date(2025, 7, 21), datetime.date(2025, 7, 22), datetime.date(2025, 7, 23), datetime.date(2025, 7, 24), datetime.date(2025, 7, 25), datetime.date(2025, 7, 28), datetime.date(2025, 7, 29), datetime.date(2025, 7, 30), datetime.date(2025, 7, 31), datetime.date(2025, 8, 1), datetime.date(2025, 8, 4), datetime.date(2025, 8, 5), datetime.date(2025, 8, 6), datetime.date(2025, 8, 7), datetime.date(2025, 8, 8), datetime.date(2025, 8, 11), datetime.date(2025, 8, 12)],
-                'columns': ['HYG', 'SPXL', 'SPXS', 'XLF', 'XLY'],
-                'data': [[7986, 17468, 466, 5258, 21969], [7994, 17902, 455, 5309, 22117], [7975, 17552, 465, 5276, 21828], [7961, 17528, 466, 5230, 21803], [7978, 17763, 459, 5236, 21882], [7975, 17927, 454, 5261, 22096], [7961, 17739, 460, 5220, 22116], [7966, 17796, 458, 5242, 22191], [7953, 17740, 460, 5185, 22001], [7959, 17669, 462, 5185, 21908], [7971, 18035, 452, 5236, 22006], [7985, 18074, 452, 5254, 22190], [7997, 18208, 448, 5252, 22331], [8006, 18118, 450, 5264, 22504], [8011, 18519, 440, 5296, 22643], [8005, 18662, 437, 5315, 22319], [8009, 18808, 434, 5334, 22458], [8006, 18826, 434, 5314, 22618], [8009, 18732, 436, 5289, 22490], [7995, 18610, 439, 5272, 22343], [7999, 18526, 441, 5250, 22216], [7996, 17516, 465, 5140, 21606], [8020, 18140, 450, 5180, 21832], [8019, 18062, 450, 5171, 21910], [8026, 18296, 445, 5190, 22244], [8023, 18375, 443, 5155, 22333], [8021, 18680, 436, 5179, 22396], [8022, 18670, 437, 5185, 22455], [8035, 19093, 426, 5238, 22623]],
-                'index_names': ['date'], 'column_names': [None]
-            }
-            cls.usa_df = pd.DataFrame.from_dict(data=usa_dict, orient="tight")
-            cls.usa_df.name = "usa"
-            cls.spx_df = cls.usa_df[["SPXL", "SPXS"]]
-            cls.spx_df.name = "spx"
-
-            usa_sig_dict = {
-                datetime.date(2025, 7, 2): 0, datetime.date(2025, 7, 3): -2, datetime.date(2025, 7, 7): -3, datetime.date(2025, 7, 8): 1, datetime.date(2025, 7, 9): 3, datetime.date(2025, 7, 10): -1, datetime.date(2025, 7, 11): -1, datetime.date(2025, 7, 14): -3, datetime.date(2025, 7, 15): -3, datetime.date(2025, 7, 16): 3, datetime.date(2025, 7, 17): 3, datetime.date(2025, 7, 18): 3, datetime.date(2025, 7, 21): 3, datetime.date(2025, 7, 22): 3, datetime.date(2025, 7, 23): -1, datetime.date(2025, 7, 24): -1, datetime.date(2025, 7, 25): 1, datetime.date(2025, 7, 28): -1, datetime.date(2025, 7, 29): -3, datetime.date(2025, 7, 30): -3, datetime.date(2025, 7, 31): -1, datetime.date(2025, 8, 1): -1, datetime.date(2025, 8, 4): 3, datetime.date(2025, 8, 5): 3, datetime.date(2025, 8, 6): 1, datetime.date(2025, 8, 7): -1, datetime.date(2025, 8, 8): 1, datetime.date(2025, 8, 11): 3, datetime.date(2025, 8, 12): 3
-            }
-            cls.usa_sig = pd.Series(data=usa_sig_dict, index=usa_sig_dict.keys(), name="usa_sig")
+            print(f"\n-setUp({cls})")
 
         @unittest.skip
         def test_main(self):
-            main(self)
-
-        # @unittest.skip
-        def test_pandas_data(self):
-            if DEBUG: logger.debug(
-                f"usa_df:\n{self.usa_df}\n\nspx_df:\n{self.spx_df}\n\nusa_sig_series:\n{self.usa_sig}"
-            )
+            main()
 
         @classmethod
         def tearDownClass(cls):

@@ -19,17 +19,18 @@ def savgol_filter_slope_change_signal(dataframe: pd.DataFrame, win_length: int, 
 
     # create empty dataframe with index as a timestamp
     slope_df = pd.DataFrame(index=dataframe.index.values)
-    slope_df.index.name = "date"
+    slope_df.index.name = "datetime"
     sig_df = pd.DataFrame(index=dataframe.index.values)
-    sig_df.index.name = "date"
+    sig_df.index.name = "datetime"
+    sig_df.name = f"sig_{dataframe.name}"
 
-    # slope of filtered timeseries
+    # slope (first derivitive) of filtered timeseries
     for col in dataframe.columns:
         slope_df[col] = savgol_filter(
             x=dataframe[col].values, window_length=win_length,
             polyorder=poly_order, deriv=deriv
-        )#.astype(int)
-    if DEBUG: logger.debug(f"{dataframe.name} savgol slope:\n{slope_df}\n")
+        )
+    if DEBUG: logger.debug(f"{dataframe.name}_df savgol slope:\n{slope_df}\n")
 
     for col in slope_df.columns:
         data = slope_df[col].values
@@ -54,13 +55,6 @@ def savgol_filter_slope_change_signal(dataframe: pd.DataFrame, win_length: int, 
         sig_df[f"{col}"] = zero_list
 
     sig_df["sum"] = sig_df.sum(axis=1)
-    if DEBUG: logger.debug(f"{dataframe.name} signal dataframe:\n{sig_df}\n{type(sig_df)}")
-
-    # sig_dict = sig_df.to_dict(orient="tight", index=True)
-    # print(f"sig_dict = {sig_dict}")
-
-    # sig = sig_df.sum(axis=1, numeric_only=True)
-    # if DEBUG: logger.debug(f"{dataframe.name} signal:\n{sig}, {type(sig)}")
 
     return sig_df
 
@@ -72,9 +66,7 @@ def main():
 
 if __name__ == "__main__":
     import unittest
-
     from pandas import Timestamp
-
 
     if DEBUG:
         logger.debug(f"******* START - beta/sig_utils.py *******")
@@ -102,9 +94,18 @@ if __name__ == "__main__":
             cls.usa_df.name = "usa"
 
         # @unittest.skip
+        def test_main(self):
+            if DEBUG: logger.debug(f"test_main()")
+
+        # @unittest.skip
         def test_savgol_filter_slope_change_signal(self):
-            # if DEBUG: logger.debug(f"test_savgol_filter_slope_change_signal(self={self})")
-            savgol_filter_slope_change_signal(dataframe=self.usa_df, win_length=3, poly_order=2)
+            sg_slope_sig_df = savgol_filter_slope_change_signal(
+                # dataframe=self.usa_df, win_length=3, poly_order=2
+                dataframe=self.china_df, win_length=3, poly_order=2
+            )
+            if DEBUG: logger.debug(
+                f"{sg_slope_sig_df.name} dataframe:\n{sg_slope_sig_df}\n{type(sg_slope_sig_df)}"
+            )
 
         @classmethod
         def tearDownClass(cls):

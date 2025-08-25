@@ -7,8 +7,13 @@ import pandas
 from pandas import Timestamp
 
 
+COLUMN = "cwap"
+OHLC = "tiingo_ohlc_sm.db"
+SIGNAL = "tiingo_signal_sm.db"
+DB_PATH = "/home/la/dev/rl/stonk_cli/work_dir/data/"
 DEBUG = True
-DB = "/home/la/dev/data/tiingo_sm.db"
+TABLE = "SPXL"
+TABLE_LIST = ["HYG", "XLF", "XLY"]
 
 logging.config.fileConfig(fname="logger.ini")
 logger = logging.getLogger(__name__)

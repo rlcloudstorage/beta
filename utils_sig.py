@@ -94,19 +94,20 @@ if __name__ == "__main__":
             cls.usa_df = cls.cwap_df[usa_list]
             cls.usa_df.name = "usa_cwap"
 
-        # @unittest.skip
+        @unittest.skip
         def test_main(self):
             if DEBUG: logger.debug(f"test_main()")
 
         # @unittest.skip
         def test_savgol_filter_slope_change_signal(self):
-            sg_slope_sig_df = savgol_filter_slope_change_signal(
-                # dataframe=self.usa_df, win_length=3, poly_order=2
-                dataframe=self.china_df, win_length=3, poly_order=2
-            )
-            if DEBUG: logger.debug(
-                f"{sg_slope_sig_df.name} dataframe:\n{sg_slope_sig_df}\n{type(sg_slope_sig_df)}"
-            )
+            for df in [self.china_df, self.usa_df]:
+                sg_slope_sig_df = savgol_filter_slope_change_signal(
+                    # dataframe=self.usa_df, win_length=3, poly_order=2
+                    dataframe=df, win_length=3, poly_order=2
+                )
+                if DEBUG: logger.debug(
+                    f"{sg_slope_sig_df.name} dataframe:\n{sg_slope_sig_df}\n{type(sg_slope_sig_df)}"
+                )
 
         @classmethod
         def tearDownClass(cls):

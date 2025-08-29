@@ -1,5 +1,6 @@
 # my stuff
 temp/
+temp*
 *.db
 *.bak
 *.old

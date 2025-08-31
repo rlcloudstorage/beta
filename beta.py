@@ -1,7 +1,10 @@
 """"""
 import logging, logging.config
 
+import backtrader as bt
+
 import utils_pd, utils_sig
+from temp import data
 
 
 logging.config.fileConfig(fname="logger.ini")
@@ -19,7 +22,7 @@ ctx = {
 }
 
 
-def main(ctx: dict) -> None:
+def get_df_dict(ctx: dict) -> None:
     if DEBUG: logger.debug(f"main(ctx={ctx})")
 
     for table in ctx["OHLC_TABLE"]:
@@ -42,8 +45,33 @@ def main(ctx: dict) -> None:
     if DEBUG: logger.debug(f"signal_dict = {signal_dict}")
 
 
+def main() -> None:
+    if DEBUG: logger.debug(f"main()")
+
+
+
+class AboutTwentyPercentSizer(bt.Sizer):
+    params = (('stake', 1),)
+
+    def _getsizing(self, comminfo, cash, data, isbuy):
+        return self.params.stake
+
+
 if __name__ == "__main__":
     if DEBUG:
         logger.debug(f"******* START - beta/beta.py.main() *******")
 
-    main(ctx=ctx)
+    SPXS = bt.feeds.PandasData(dataname=data.SPXS, datetime=-1, name="SPXS")
+
+    cerebro = bt.Cerebro()
+    cerebro.broker.setcash(100_000.00)
+    cerebro.broker.setcommission(commission=0.001)
+    cerebro.adddata(data=SPXS, )
+    cerebro.addsizer(AboutTwentyPercentSizer)
+
+    my_sizer = AboutTwentyPercentSizer()
+    print(f"my_sizer.stake: {my_sizer.params.stake}")
+
+    print(f"Starting Value: {cerebro.broker.getvalue():,.2f}")
+    cerebro.run()
+    print(f"Ending Value:   {cerebro.broker.getvalue():,.2f}")

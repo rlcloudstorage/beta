@@ -13,8 +13,17 @@ logging.config.fileConfig(fname="logger.ini")
 logger = logging.getLogger(__name__)
 
 
-class PandasDataOHLCC(bt.feeds.PandasData):
+class ApproximatePercentSizer(bt.Sizer):
+    params = (('percents', 40), )
 
+    def _getsizing(self, comminfo, cash, data, isbuy):
+        """"""
+        # if DEBUG: logger.debug(f"self.broker.startingcash: {self.broker.startingcash}\n")
+        return int(round(self.broker.startingcash * self.params.percents / 100 / data[0], -2))
+
+
+class PandasDataOHLCC(bt.feeds.PandasData):
+    """"""
     lines = ("cwap",)
     params = (
         ("datetime", None),
@@ -26,7 +35,7 @@ class PandasDataOHLCC(bt.feeds.PandasData):
 
 
 class PandasSignalDataUSA(bt.feeds.PandasData):
-
+    """"""
     lines = ("HYG", "XLF", "XLY", "sum")
     params = (
         ("datetime", None),
@@ -37,114 +46,105 @@ class PandasSignalDataUSA(bt.feeds.PandasData):
     datafields = bt.feeds.PandasData.datafields + (["HYG", "XLF", "XLY", "sum"])
 
 
-class TradeSPXLorSPXS(bt.Strategy):
+class TradeLongShort(bt.Strategy):
     """"""
-
     params = (
-        ('period_1', 3),
-        ('period_2', 7),
+        ('period_1', 2),
+        ('period_2', 5),
         # ('prepend_constant', True),
     )
 
-    def log(self, txt, dt=None):
-        """"""
-        dt = dt or self.datas[0].datetime.date(0)
-        print(f"{dt.isoformat()}, {txt}")
-
     def __init__(self):
+        """"""
         self.SPXL = self.datas[0].close
         self.SPXS = self.datas[1].close
 
-        ma1 = bt.indicators.SMA(self.SPXL, period=self.p.period_1)
-        ma2 = bt.indicators.SMA(self.SPXL, period=self.p.period_2)
+        ma_1 = bt.indicators.SMA(self.SPXL, period=self.p.period_1)
+        ma_2 = bt.indicators.SMA(self.SPXL, period=self.p.period_2)
 
-        cross = bt.ind.CrossOver(ma1, ma2)
+        cross = bt.ind.CrossOver(ma_1, ma_2)
 
         self.buy_sig = cross > 0
         self.sell_sig = cross < 0
 
         self.order = None
-        # self.exec_price = None
-        # self.sale_comm = None
 
-        print(f"datanames: {self.getdatanames()}")
+
+    def log(self, txt, dt=None):
+        """"""
+        dt = dt or self.datas[0].datetime.date(0)
+        print(f"{dt.isoformat()}, {txt}")
+        # with open("backtrader.log", "a") as f:
+        #     print(f"{dt.isoformat()}, {txt}", file=f)
+
 
     def notify_cashvalue(self, cash, value):
         """"""
-        self.log(f"Cash Available: {cash:,.2f}, Account Value: {value:,.2f}")
+        self.log(txt=f"Cash on Hand: {cash:,.2f}, Account Value: {value:,.2f}")
+
 
     def notify_order(self, order):
         """"""
         if order.status in [order.Submitted, order.Accepted]:
-            if DEBUG: logger.debug(f"order submitted/accepted: status {order.status}")
+            self.log(txt=f"order submitted/accepted: status {order.status}")
             return
-
-        if order.status in [order.Completed]:  # Note: broker could reject order if not enough cash
-            if DEBUG: logger.debug(f"order completed: status {order.status}")
-            # self.exec_price = order.executed.price
-            # self.sale_comm = order.executed.comm
-
+        elif order.status in [order.Completed]:
+            self.log(txt=f"order completed: status {order.status}")
             if order.isbuy():
                 self.log(txt=f"BUY EXECUTED, Price: {order.executed.price:,.2f}, Cost: {order.executed.value:,.2f}, Comm {order.executed.comm:,.2f}")
-
             elif order.issell():
                 self.log(txt=f"SELL EXECUTED, Price: {order.executed.price:,.2f}, Cost: {order.executed.value:,.2f}, Comm {order.executed.comm:,.2f}")
-
-            # if DEBUG: logger.debug(f"Get position SPXL:\n{self.getposition(self.datas[0])}")
-            # if DEBUG: logger.debug(f"Get position SPXS:\n{self.getposition(self.datas[1])}")
-
             self.bar_executed = len(self)
-
         elif order.status in [order.Cancelled, order.Margin, order.Rejected]:
-            if DEBUG: logger.debug(f"Order canceled/margin/rejected: status {order.status}")
-            self.log(txt=f" *** Order Canceled/Margin/Rejected ***")
-
+            self.log(txt=f"Order canceled/margin/rejected: status {order.status}")
         self.order = None
+
 
     def notify_trade(self, trade):
         if not trade.isclosed:
             return
         self.log(txt=f"OPERATION PROFIT, GROSS {trade.pnl:,.2f}, NET {trade.pnlcomm:,.2f}")
 
+
     def next(self):
-        # if DEBUG: logger.debug(f"buy signal:{self.buy_sig.__dict__}, sell signal: {self.sell_sig.__dict__}")
-        self.log(txt=f"SPXL: {self.SPXL[0]:,.2f}, SPXS: {self.SPXS[0]:,.2f}")
+        """"""
+        # if DEBUG: logger.debug(f" *** self._orderspending:\n{[ i.p.__dict__ for i in self._orderspending]}")
 
-        # Check if we are in the market
-        if not self.getposition(self.datas[1]):
-            # if DEBUG: logger.debug(f"Get position:\n{self.getposition(self.dnames.SPXS)}")
-            self.log(f"Position size {self.position.size}")
-            # Not yet ... we MIGHT BUY if ...
-            if self.buy_sig:
-                    # if sma[0]<top[-5]:
-                # BUY, BUY, BUY!!! (with default parameters)
-                self.log(f"CREATE BUY SPXL @ {self.SPXL[0]:,.2f}")
+        in_spxl = self.getposition(self.dnames.SPXL)
+        in_spxs = self.getposition(self.dnames.SPXS)
 
-                # Keep track of the created order to avoid a 2nd order
-                # self.order = self.buy(self.datas[0])
-                self.order = self.buy(self.dnames.SPXL)
-                # self.order = self.sell(self.datas[1])
-            elif self.sell_sig:
-                self.log(f"CREATE BUY SPXS @ {self.SPXS[0]:,.2f}")
-                # self.order = self.buy(self.datas[1])
-                self.order = self.buy(self.dnames.SPXS)
+        # long (position in SPXL)?
+        match bool(in_spxl):
+            case True:  # already in market
+                if self.sell_sig:  # take profit
+                    self.log(txt=f"CREATE SELL SPXL @ {self.SPXL[0]:,.2f}")
+                    self.order = self.close(self.dnames.SPXL)
+                elif self.buy_sig:  # hold position
+                    pass
+            case False:  # might go long
+                if self.buy_sig:  # long now
+                    self.log(txt=f"CREATE BUY SPXL @ {self.SPXL[0]:,.2f}")
+                    self.order = self.buy(self.dnames.SPXL)
+                elif self.sell_sig:  # not yet
+                    pass
 
-        # Already in the market ... we might sell
-        else:
-            self.log(f"Position size {self.position.size}")
-            if self.buy_sig:
-                self.log(f"CREATE SELL SPXL @ {self.SPXL[0]:,.2f}")
+        # short (position in SPXS)?
+        match bool(in_spxs):
+            case True:  # already short
+                if self.buy_sig:  # take profit
+                    self.log(txt=f"CREATE SELL SPXS @ {self.SPXS[0]:,.2f}")
+                    self.order = self.close(self.dnames.SPXS)
+                elif self.sell_sig:  # hold position
+                    pass
+            case False:  # might short
+                if self.buy_sig:  # not yet
+                    pass
+                elif self.sell_sig:  # short now
+                    self.log(txt=f"CREATE BUY SPXS @ {self.SPXS[0]:,.2f}")
+                    self.order = self.buy(self.dnames.SPXS)
 
-                self.order = self.close(self.datas[1])
-                self.order = self.buy(self.datas[0])
-
-            elif self.sell_sig:
-                # SELL, SELL, SELL!!! (with all possible default parameters)
-                self.log(f"CREATE SELL SPXL @ {self.SPXL[0]:,.2f}")
-
-                # Keep track of the created order to avoid a 2nd order
-                self.order = self.close(self.datas[0])
-                self.order = self.buy(self.datas[1])
+        if in_spxl or in_spxs:
+            self.log(txt=f"{in_spxl.size} shares SPXL @ {in_spxl.price:.2f}, {in_spxs.size} shares SPXS @ {in_spxs.price:.2f}")
 
 
 def main() -> None:
@@ -152,22 +152,22 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    if DEBUG: logger.debug(f"******* START BACKTEST *******")
-
-    cerebro = bt.Cerebro()
-    cerebro.broker.setcash(100_000.00)
-    cerebro.broker.setcommission(commission=0.001)
-    cerebro.addsizer(bt.sizers.FixedSize, stake=100)
-    cerebro.addstrategy(TradeSPXLorSPXS)
+    if DEBUG: logger.debug(f"******* START BACKTRADER *******")
 
     SPXL = bt.feeds.PandasData(dataname=data.SPXL, datetime=-1, name="SPXL")
     SPXS = bt.feeds.PandasData(dataname=data.SPXS, datetime=-1, name="SPXS")
 
+    cerebro = bt.Cerebro()
+    cerebro.broker.setcash(100_000.00)
+    cerebro.broker.setcommission(commission=0.001)
     cerebro.adddata(data=SPXL, )
     cerebro.adddata(data=SPXS, )
+    cerebro.addsizer(ApproximatePercentSizer, percents=40)
+    cerebro.addstrategy(TradeLongShort)
+    # cerebro.addwriter(bt.WriterFile, csv=True)
 
-    [print(f"{d._name} data:\n{d._dataname}\n") for d in cerebro.datas]
     # if DEBUG: logger.debug(f"cerebro.__dict__: {cerebro.__dict__}")
+    # if DEBUG: [logger.debug(f"{d._name} data:\n{d._dataname}\n")  for d in cerebro.datas]
 
     print(f"Starting Value: {cerebro.broker.getvalue():,.2f}")
     cerebro.run()

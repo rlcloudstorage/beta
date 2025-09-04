@@ -6,13 +6,16 @@ import backtrader as bt
 
 from temp import data
 
-BULL = data.SPXL
-BEAR = data.SPXS
-SIGNAL = data.signal
+usa_bull = data.SPXL
+usa_bear = data.SPXS
+usa_sig = data.signal
 DEBUG = True
 # DEBUG = False
 
+
 logging.config.fileConfig(fname="logger.ini")
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("PIL").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
@@ -25,22 +28,16 @@ class ApproximatePercentSizer(bt.Sizer):
         return int(round(self.broker.startingcash * self.params.percents / 100 / data[0], -2))
 
 
-class LongShortIndicator(bt.Indicator):
+class ShiftedSlopeChangeIndicator(bt.Indicator):
     """"""
     lines = ("TS", )
 
     def __init__(self):
-        # self.TS = cerebro.datas[2].TS
-        # self.lines.TS = self.TS
         self.lines.TS = self.data
-        super(LongShortIndicator, self).__init__()
+        super(ShiftedSlopeChangeIndicator, self).__init__()
 
-        if DEBUG: logger.debug(f"LongShortIndicator self.TS: {[i for i in self.TS]}")
-        if DEBUG: logger.debug(f"LongShortIndicator self.lines.TS: {[i for i in self.lines.TS]}")
-
-    # def next(self):
-    #     self.lines.TS[0] = self.TS[0]
-    #     if DEBUG: logger.debug(f"self.lines.TS[0]: {self.lines.TS[0]}")
+        if DEBUG: logger.debug(f"ShiftedSlopeChangeIndicator self.TS: {[i for i in self.TS]}")
+        if DEBUG: logger.debug(f"ShiftedSlopeChangeIndicator self.lines.TS: {[i for i in self.lines.TS]}")
 
 
 class PandasSignalData(bt.feeds.PandasData):
@@ -60,17 +57,13 @@ class TradeLongShort(bt.Strategy):
     params = (('prepend_constant', True),)
 
     def __init__(self):
-        """"""
-        # self.bull = self.datas[0].close
-        # self.bear = self.datas[1].close
-        self.ts_sig = None
-
-        if DEBUG: logger.debug(f"__init__.TS: {[i for i in self.datas[2].TS]}")
-
-        self.ts_sig = LongShortIndicator(self.datas[2].TS)
-        self.order = None
         self.buyprice = None
         self.buycomm = None
+        self.order = None
+        self.ts_sig = None
+        self.ts_sig = ShiftedSlopeChangeIndicator(self.datas[2].TS)
+        if DEBUG:
+            logger.debug(f"__init__.ts_sig: {[i for i in self.ts_sig.data]}")
 
 
     def log(self, txt, dt=None):
@@ -114,8 +107,6 @@ class TradeLongShort(bt.Strategy):
 
     def next(self):
         """"""
-        # if DEBUG: logger.debug(f" *** self._orderspending:\n{[ i.p.__dict__ for i in self._orderspending]}")
-
         in_bull = self.getposition(self.datas[0])
         in_bear = self.getposition(self.datas[1])
 
@@ -123,7 +114,7 @@ class TradeLongShort(bt.Strategy):
         match bool(in_bull):
             case True:  # already in market
                 if self.ts_sig <= 0:  # take profit
-                    self.log(txt=f"CREATE SELL BULL @ {self.datas[0][0]:,.2f}")
+                    self.log(txt=f"CREATE SELL usa_bull @ {self.datas[0][0]:,.2f}")
                     self.order = self.close(self.datas[0])
                 elif self.ts_sig > 0:  # hold position
                     pass
@@ -156,17 +147,17 @@ class TradeLongShort(bt.Strategy):
 if __name__ == "__main__":
     if DEBUG: logger.debug(f"******* START BACKTRADER *******")
 
-    bull = bt.feeds.PandasData(dataname=BULL, datetime=-1, name="bull")
-    bear = bt.feeds.PandasData(dataname=BEAR, datetime=-1, name="bear")
-    signal = PandasSignalData(dataname=SIGNAL, datetime=-1, name="signal")
+    bull = bt.feeds.PandasData(dataname=usa_bull, datetime=-1)
+    bear = bt.feeds.PandasData(dataname=usa_bear, datetime=-1)
+    signal = PandasSignalData(dataname=usa_sig, datetime=-1)
 
-    cerebro = bt.Cerebro()
+    cerebro = bt.Cerebro(stdstats=False)
     cerebro.broker.setcash(100_000.00)
     cerebro.broker.setcommission(commission=0.001)
-    cerebro.adddata(data=bull, )
-    cerebro.adddata(data=bear, )
-    cerebro.adddata(data=signal)
-    cerebro.addsizer(ApproximatePercentSizer, percents=40)
+    cerebro.adddata(data=bull, name="bull")
+    cerebro.adddata(data=bear, name="bear")
+    cerebro.adddata(data=signal, name="signal")
+    cerebro.addsizer(ApproximatePercentSizer, percents=60)
     cerebro.addstrategy(TradeLongShort)
     # cerebro.addwriter(bt.WriterFile, csv=True)
 
@@ -174,7 +165,9 @@ if __name__ == "__main__":
     if DEBUG: [logger.debug(f"cerebro.datas: {cerebro.datas[i]}, {d._name} data:\n{d._dataname}\n")  for i, d in enumerate(cerebro.datas)]
 
     print(f"Starting Value: {cerebro.broker.getvalue():,.2f}")
-    cerebro.run()
+    # cerebro.run()
+    cerebro.run(stdstats=False)
     print(f"Ending Value:   {cerebro.broker.getvalue():,.2f}")
 
+    # cerebro.plot()
     # cerebro.plot(figsize=(10, 7.5))

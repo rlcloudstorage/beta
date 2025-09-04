@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 DEBUG = True
 
 ctx = {
-    "COLUMN": ["cwap", "sc_cwap"],
+    "COLUMN": ["clop", "clv", "cwap", "hilo", "volume"],
     "OHLC_DB": "tiingo_ohlc_sm.db",
     "SIGNAL_DB": "tiingo_signal_sm.db",
     "DB_PATH": "/home/la/dev/rl/stonk_cli/work_dir/data/",
@@ -58,11 +58,6 @@ if __name__ == "__main__":
     if DEBUG:
         logger.debug(f"******* START - beta/beta.py.main() *******")
 
-    spxl = data.SPXL
-    signal = data.signal
-    SIGNAL = data.SIGNAL
-
-    # df = add_line_to_ohlc_df(line_s=pd.Series(signal["sum"]), ohlc_df=spxl, name="TS")
-
-    # df_dict = df.to_dict(orient="tight", index=True)
-    if DEBUG: logger.debug(f"SIGNAL:\n{SIGNAL}, {type(SIGNAL)}")
+    SPXL_sig_df = add_line_to_ohlc_df(ohlc_df=data.SPXL, line_s=data.signal[["TS"]], name="TS")
+    SPXL_sig_dict = SPXL_sig_df.to_dict(orient="tight", index=True)
+    if DEBUG: logger.debug(f"SPXL_sig_dict = {SPXL_sig_dict}")
